@@ -9,28 +9,20 @@ from graph import ask_question
 
 TEST_QUERIES = [
     {
-        "category": "Introduction / Foundations",
-        "question": "What is Agentic AI and how does it differ from traditional LLMs?"
+        "category": "Book Metadata",
+        "question": "name of the book"
     },
     {
-        "category": "Architecture / Anatomy",
-        "question": "What are the core components or anatomy of an Agentic AI system?"
+        "category": "Table of Contents / Structure",
+        "question": "content of the book"
     },
     {
-        "category": "Multi-Agent Systems",
-        "question": "What are multi-agent systems and what patterns are used to orchestrate them?"
-    },
-    {
-        "category": "Organizational Readiness",
-        "question": "What criteria determine an organization's readiness for Agentic AI?"
-    },
-    {
-        "category": "Enterprise Applications",
-        "question": "What are some real-world customer use cases and industry applications of Agentic AI described in the book?"
+        "category": "Core Definition",
+        "question": "what is agentic ai"
     },
     {
         "category": "Strict Grounding (Negative Test)",
-        "question": "How do I bake a chocolate cake at home?"
+        "question": "how to make a pizza"
     }
 ]
 

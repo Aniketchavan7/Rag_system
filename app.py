@@ -67,13 +67,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sample Queries
+# Sample Queries (Humanized)
 SAMPLE_QUERIES = [
-    "What is Agentic AI and how does it differ from traditional LLMs?",
-    "What are the core components or anatomy of an Agentic AI system?",
-    "What are multi-agent systems and what patterns are used to orchestrate them?",
-    "What criteria determine an organization's readiness for Agentic AI?",
-    "What are some real-world customer use cases and industry applications of Agentic AI described in the book?",
-    "How do I bake a chocolate cake at home?"  # Negative test
+    "name of the book",
+    "content of the book",
+    "what is agentic ai"
 ]
 
 # Initialize Session State for Chat History

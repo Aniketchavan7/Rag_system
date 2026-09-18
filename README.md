@@ -211,24 +211,22 @@ Run the automated test suite across all 6 representative questions:
 python test_queries.py
 ```
 
-### Evaluated Benchmark Queries:
+### Evaluated Sample Queries:
 
-| # | Category | Sample Query | Grounded | Confidence | Citations |
+| # | Category | Humanized Query | Grounded | Confidence | Citations |
 |---|---|---|:---:|:---:|:---:|
-| 1 | **Introduction** | *"What is Agentic AI and how does it differ from traditional LLMs?"* | ✅ Yes | ~0.88 | Page 8, 9, 10 |
-| 2 | **Architecture / Anatomy** | *"What are the core components or anatomy of an Agentic AI system?"* | ✅ Yes | ~0.87 | Page 17, 31 |
-| 3 | **Multi-Agent Systems** | *"What are multi-agent systems and what patterns are used to orchestrate them?"* | ✅ Yes | ~0.89 | Page 30, 31, 37 |
-| 4 | **Readiness Assessment** | *"What criteria determine an organization's readiness for Agentic AI?"* | ✅ Yes | ~0.91 | Page 48, 50, 51 |
-| 5 | **Industry Use Cases** | *"What are some real-world customer use cases and industry applications of Agentic AI described in the book?"* | ✅ Yes | ~0.86 | Page 11, 54 |
-| 6 | **Strict Grounding Refusal** | *"How do I bake a chocolate cake at home?"* | ❌ Refused | ~0.15 | N/A (Refusal) |
+| 1 | **Book Metadata** | `name of the book` | ✅ Yes | **~0.82** | Page 3, 60 |
+| 2 | **Table of Contents** | `content of the book` | ✅ Yes | **~0.82** | Page 5, 3, 59 |
+| 3 | **Core Definition** | `what is agentic ai` | ✅ Yes | **~0.88** | Page 8, 7 |
+| 4 | **Strict Grounding Refusal** | `how to make a pizza` | ❌ Refused | **~0.15** | Refusal |
 
 ### Refusal Behavior on Out-of-Domain Query:
 ```text
-Question: "How do I bake a chocolate cake at home?"
+Question: "how to make a pizza"
 Confidence Score: 0.150 | Grounded: False
 
 Answer:
-"I cannot answer this question because the provided Agentic AI eBook does not contain relevant information on this topic. The context mentions a 'Chef' as an analogy for how Agentic AI manages tasks (Page 8), but it does not provide actual instructions or recipes for baking a chocolate cake."
+"I cannot answer this question because the provided Agentic AI eBook does not contain relevant information on this topic."
 ```
 
 ---
