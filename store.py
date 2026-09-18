@@ -246,10 +246,14 @@ class ChromaVectorStore:
                     "metadata": self._bm25_ranker.metadatas[idx]
                 }
 
-        # 3. Reciprocal Rank Fusion (RRF)
+        # 3. Reciprocal Rank Fusion (RRF) & Balanced Score Calibration
         all_candidate_ids = set(dense_map.keys()).union(set(sparse_map.keys()))
         k_rrf = 60
         fused = []
+
+        max_bm_score = max((s["bm_score"] for s in sparse_map.values()), default=1.0)
+        if max_bm_score <= 0:
+            max_bm_score = 1.0
 
         for cid in all_candidate_ids:
             d_info = dense_map.get(cid)
@@ -260,15 +264,19 @@ class ChromaVectorStore:
 
             rrf_score = (1.0 / (k_rrf + d_rank)) + (1.0 / (k_rrf + s_rank))
 
-            # Calibrated display similarity score
+            # Strictly calibrated similarity score without artificial inflation
             if d_info and s_info:
-                sim = max(d_info["score"], 0.82)
-            elif s_info and s_rank <= 2:
-                sim = 0.85
+                # Weighted blend: dense semantic score is primary (75%), reinforced by BM25 token match (25%)
+                norm_bm = min(1.0, s_info["bm_score"] / max_bm_score)
+                sim = (0.75 * d_info["score"]) + (0.25 * norm_bm)
             elif d_info:
                 sim = d_info["score"]
+            elif s_info:
+                # Sparse-only match without semantic proximity: cap score below threshold
+                norm_bm = min(1.0, s_info["bm_score"] / max_bm_score)
+                sim = 0.35 * norm_bm
             else:
-                sim = 0.50
+                sim = 0.0
 
             doc_text = d_info["text"] if d_info else s_info["text"]
             page = d_info["page"] if d_info else s_info["page"]
@@ -278,7 +286,7 @@ class ChromaVectorStore:
                 "id": cid,
                 "text": doc_text,
                 "page": page,
-                "score": round(sim, 3),
+                "score": round(float(sim), 3),
                 "rrf": rrf_score,
                 "metadata": meta
             })

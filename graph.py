@@ -21,7 +21,7 @@ from store import get_vector_store
 
 
 # State definition for the LangGraph workflow
-class RAGState(TypedDict):
+class RAGState(TypedDict, total=False):
     question: str
     retrieved_chunks: List[Dict[str, Any]]
     context_text: str
@@ -29,6 +29,7 @@ class RAGState(TypedDict):
     confidence_score: float
     is_grounded: bool
     refusal: bool
+    error: bool
 
 
 def create_llm() -> ChatOpenAI:
@@ -105,10 +106,17 @@ def generate_node(state: RAGState) -> Dict[str, Any]:
         )
         return {
             "answer": refusal_msg,
-            "is_grounded": False
+            "is_grounded": False,
+            "error": False
         }
 
-    llm = create_llm()
+    # Guard: ensure API key is configured
+    if not LLM_API_KEY or LLM_API_KEY.strip() in ("", "your_llm_api_key_here"):
+        return {
+            "answer": "Error: LLM API key is not configured. Please set a valid LLM_API_KEY in your .env file.",
+            "is_grounded": False,
+            "error": True
+        }
 
     system_prompt = (
         "You are an expert AI assistant specialized exclusively in the 'Agentic AI eBook' knowledge base.\n\n"
@@ -133,35 +141,57 @@ def generate_node(state: RAGState) -> Dict[str, Any]:
     ]
 
     try:
+        llm = create_llm()
         response = llm.invoke(messages)
         answer_text = response.content.strip()
+        error_occurred = False
     except Exception as err:
         answer_text = f"Error generating response from LLM: {err}"
+        error_occurred = True
 
-    return {"answer": answer_text}
+    return {
+        "answer": answer_text,
+        "is_grounded": not error_occurred,
+        "error": error_occurred
+    }
 
 
 def verify_grounding_node(state: RAGState) -> Dict[str, Any]:
     """Step 4: Verify answer grounding and finalize confidence score."""
-    answer = state.get("answer", "")
+    answer = state.get("answer", "").strip()
     retrieved = state.get("retrieved_chunks", [])
     current_score = state.get("confidence_score", 0.0)
+    has_error = (
+        state.get("error", False)
+        or answer.startswith("Error")
+        or "error generating response" in answer.lower()
+        or "api key is not configured" in answer.lower()
+    )
 
-    # Check for refusal indicators
+    # 1. Error Guard: LLM errors must NEVER be returned as grounded
+    if has_error:
+        return {
+            "confidence_score": 0.0,
+            "is_grounded": False
+        }
+
+    # 2. Refusal Guard: Check for refusal indicators
     refusal_keywords = [
         "does not contain",
         "cannot answer",
         "not mentioned in the context",
-        "no information provided"
+        "no information provided",
+        "i do not have enough information",
+        "not provide enough specific facts"
     ]
-    is_refusal = any(k in answer.lower() for k in refusal_keywords)
+    is_refusal = state.get("refusal", False) or any(k in answer.lower() for k in refusal_keywords)
 
     if is_refusal or not retrieved:
         final_score = min(current_score, 0.15)
         is_grounded = False
     else:
-        # Scale confidence score based on chunk quality
-        final_score = min(1.0, max(0.5, current_score))
+        # Scale confidence score based on verified chunk quality
+        final_score = min(1.0, max(0.45, current_score))
         is_grounded = True
 
     return {

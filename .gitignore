@@ -7,9 +7,12 @@ __pycache__/
 env/
 venv/
 .venv/
+.venv-run/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Chroma vector database local files
 data/chroma_db/
