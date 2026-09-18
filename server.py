@@ -49,11 +49,14 @@ class ChatResponse(BaseModel):
     execution_time_sec: float
 
 
-# Humanized sample queries
+# Humanized sample queries (typed like a real person would)
 SAMPLE_QUERIES = [
     "name of the book",
     "content of the book",
-    "what is agentic ai"
+    "what is agentic ai",
+    "tell me about multi agent systems",
+    "how companies using agentic ai",
+    "what are the layers in agentic ai architecture"
 ]
 
 

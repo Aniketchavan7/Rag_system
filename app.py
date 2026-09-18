@@ -66,12 +66,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sample Queries
-# Sample Queries (Humanized)
+# Sample Queries (Humanized - typed like a real person would)
 SAMPLE_QUERIES = [
     "name of the book",
     "content of the book",
-    "what is agentic ai"
+    "what is agentic ai",
+    "tell me about multi agent systems",
+    "how companies using agentic ai",
+    "what are the layers in agentic ai architecture"
 ]
 
 # Initialize Session State for Chat History

@@ -205,7 +205,7 @@ curl -X POST "http://127.0.0.1:8000/query" \
 
 ## 🧪 Sample Queries & Verification
 
-Run the automated test suite across all 6 representative questions:
+Run the automated test suite across all 7 representative questions:
 
 ```bash
 python test_queries.py
@@ -218,7 +218,10 @@ python test_queries.py
 | 1 | **Book Metadata** | `name of the book` | ✅ Yes | **~0.82** | Page 3, 60 |
 | 2 | **Table of Contents** | `content of the book` | ✅ Yes | **~0.82** | Page 5, 3, 59 |
 | 3 | **Core Definition** | `what is agentic ai` | ✅ Yes | **~0.88** | Page 8, 7 |
-| 4 | **Strict Grounding Refusal** | `how to make a pizza` | ❌ Refused | **~0.15** | Refusal |
+| 4 | **Multi-Agent Systems** | `tell me about multi agent systems` | ✅ Yes | **~0.80** | Page 36+ |
+| 5 | **Industry Use Cases** | `how companies using agentic ai` | ✅ Yes | **~0.78** | Page 48+ |
+| 6 | **Architecture Layers** | `what are the layers in agentic ai architecture` | ✅ Yes | **~0.82** | Page 29+ |
+| 7 | **Strict Grounding Refusal** | `how to make a pizza` | ❌ Refused | **~0.15** | Refusal |
 
 ### Refusal Behavior on Out-of-Domain Query:
 ```text

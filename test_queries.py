@@ -1,5 +1,5 @@
 """
-Test script to benchmark and verify the RAG pipeline on 6 representative queries.
+Test script to benchmark and verify the RAG pipeline on 7 representative queries.
 Demonstrates accurate retrieval, grounding, citation of page numbers,
 and refusal on out-of-domain queries.
 """
@@ -21,6 +21,18 @@ TEST_QUERIES = [
         "question": "what is agentic ai"
     },
     {
+        "category": "Multi-Agent Systems",
+        "question": "tell me about multi agent systems"
+    },
+    {
+        "category": "Industry Use Cases",
+        "question": "how companies using agentic ai"
+    },
+    {
+        "category": "Architecture Layers",
+        "question": "what are the layers in agentic ai architecture"
+    },
+    {
         "category": "Strict Grounding (Negative Test)",
         "question": "how to make a pizza"
     }
@@ -36,7 +48,7 @@ def run_benchmark():
         q = test["question"]
         cat = test["category"]
 
-        print(f"\n[TEST {idx}/6] Category: {cat}")
+        print(f"\n[TEST {idx}/{len(TEST_QUERIES)}] Category: {cat}")
         print(f"Question: \"{q}\"")
         print("-" * 80)
 
