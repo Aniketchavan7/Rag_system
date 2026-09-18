@@ -103,6 +103,9 @@ with st.sidebar:
     st.markdown(f"**LLM Engine:** `{LLM_MODEL}`")
     st.markdown(f"**Pipeline:** `LangGraph StateGraph`")
 
+    st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+    st.link_button("🚀 FastAPI Docs", "http://localhost:8000/docs", use_container_width=True)
+
     st.markdown("---")
     st.subheader("💡 Sample Questions")
     st.caption("Click any question to try it:")
