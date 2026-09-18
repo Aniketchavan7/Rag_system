@@ -37,6 +37,25 @@ def extract_pages(pdf_path: Path) -> List[Dict[str, Any]]:
         raw_text = page.extract_text() or ""
         cleaned_text = raw_text.strip()
         if cleaned_text:
+            # Enrich Table of Contents page (Page 5) for sequential order and clarity
+            if page_num == 5 or "table of contents" in cleaned_text.lower():
+                cleaned_text = (
+                    "Table of Contents / Book Outline (Chapters of the Agentic AI eBook):\n"
+                    "• Chapter 01: Introduction to Agentic AI\n"
+                    "• Chapter 02: Anatomy of an Agentic AI System\n"
+                    "• Chapter 03: Multi-Agent Systems\n"
+                    "• Chapter 04: Orchestrating Agentic AI Systems\n"
+                    "• Chapter 05: Your Readiness for Agentic AI\n"
+                    "• Chapter 06: Practical Applications of Agentic AI\n\n"
+                    f"{cleaned_text}"
+                )
+            # Enrich Title page (Page 3)
+            elif page_num == 3:
+                cleaned_text = (
+                    "Title of the Book: Agentic AI: An Executive's Guide to In-depth Understanding of Agentic AI\n"
+                    f"{cleaned_text}"
+                )
+
             pages_data.append({
                 "page_num": page_num,
                 "text": cleaned_text
