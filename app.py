@@ -73,7 +73,12 @@ SAMPLE_QUERIES = [
     "what is agentic ai",
     "tell me about multi agent systems",
     "how companies using agentic ai",
-    "what are the layers in agentic ai architecture"
+    "what are the layers in agentic ai architecture",
+    "multi agent sales forecasting example",
+    "challenges in multi agent systems",
+    "types of agentic ai systems",
+    "capabilities of agentic ai",
+    "reactive to proactive technology"
 ]
 
 # Initialize Session State for Chat History

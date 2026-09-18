@@ -1,5 +1,5 @@
 """
-Test script to benchmark and verify the RAG pipeline on 7 representative queries.
+Test script to benchmark and verify the RAG pipeline on 12 representative queries.
 Demonstrates accurate retrieval, grounding, citation of page numbers,
 and refusal on out-of-domain queries.
 """
@@ -31,6 +31,26 @@ TEST_QUERIES = [
     {
         "category": "Architecture Layers",
         "question": "what are the layers in agentic ai architecture"
+    },
+    {
+        "category": "Sales Forecasting Scenario",
+        "question": "multi agent sales forecasting example"
+    },
+    {
+        "category": "MAS Challenges",
+        "question": "challenges in multi agent systems"
+    },
+    {
+        "category": "Agentic System Types",
+        "question": "types of agentic ai systems"
+    },
+    {
+        "category": "Agentic AI Capabilities",
+        "question": "capabilities of agentic ai"
+    },
+    {
+        "category": "Reactive vs Proactive",
+        "question": "reactive to proactive technology"
     },
     {
         "category": "Strict Grounding (Negative Test)",
