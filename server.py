@@ -51,8 +51,6 @@ class ChatResponse(BaseModel):
 
 # Humanized sample queries (typed like a real person would)
 SAMPLE_QUERIES = [
-    "name of the book",
-    "content of the book",
     "what is agentic ai",
     "tell me about multi agent systems",
     "how companies using agentic ai",

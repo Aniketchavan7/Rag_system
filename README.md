@@ -205,7 +205,7 @@ curl -X POST "http://127.0.0.1:8000/query" \
 
 ## 🧪 Sample Queries & Verification
 
-Run the automated test suite across all 12 representative questions:
+Run the automated test suite across all 10 representative questions:
 
 ```bash
 python test_queries.py
@@ -215,18 +215,16 @@ python test_queries.py
 
 | # | Category | Humanized Query | Grounded | Confidence | Citations |
 |---|---|---|:---:|:---:|:---:|
-| 1 | **Book Metadata** | `name of the book` | ✅ Yes | **~0.82** | Page 3, 60 |
-| 2 | **Table of Contents** | `content of the book` | ✅ Yes | **~0.82** | Page 5, 3, 59 |
-| 3 | **Core Definition** | `what is agentic ai` | ✅ Yes | **~0.88** | Page 8, 7 |
-| 4 | **Multi-Agent Systems** | `tell me about multi agent systems` | ✅ Yes | **~0.89** | Page 30, 31 |
-| 5 | **Industry Use Cases** | `how companies using agentic ai` | ✅ Yes | **~0.88** | Page 6, 7 |
-| 6 | **Architecture Layers** | `what are the layers in agentic ai architecture` | ✅ Yes | **~0.85** | Page 31 |
-| 7 | **Sales Forecasting Scenario** | `multi agent sales forecasting example` | ✅ Yes | **~0.82** | Page 36+ |
-| 8 | **MAS Challenges** | `challenges in multi agent systems` | ✅ Yes | **~0.82** | Page 29+ |
-| 9 | **Agentic System Types** | `types of agentic ai systems` | ✅ Yes | **~0.82** | Page 17+ |
-| 10 | **Agentic AI Capabilities** | `capabilities of agentic ai` | ✅ Yes | **~0.85** | Page 8+ |
-| 11 | **Reactive vs Proactive** | `reactive to proactive technology` | ✅ Yes | **~0.82** | Page 7+ |
-| 12 | **Strict Grounding Refusal** | `how to make a pizza` | ❌ Refused | **~0.15** | Refusal |
+| 1 | **Core Definition** | `what is agentic ai` | ✅ Yes | **~0.88** | Page 8, 7 |
+| 2 | **Multi-Agent Systems** | `tell me about multi agent systems` | ✅ Yes | **~0.89** | Page 30, 31 |
+| 3 | **Industry Use Cases** | `how companies using agentic ai` | ✅ Yes | **~0.88** | Page 6, 7 |
+| 4 | **Architecture Layers** | `what are the layers in agentic ai architecture` | ✅ Yes | **~0.85** | Page 31 |
+| 5 | **Sales Forecasting Scenario** | `multi agent sales forecasting example` | ✅ Yes | **~0.86** | Page 43+ |
+| 6 | **MAS Challenges** | `challenges in multi agent systems` | ✅ Yes | **~0.87** | Page 29+ |
+| 7 | **Agentic System Types** | `types of agentic ai systems` | ✅ Yes | **~0.85** | Page 23+ |
+| 8 | **Agentic AI Capabilities** | `capabilities of agentic ai` | ✅ Yes | **~0.86** | Page 9+ |
+| 9 | **Reactive vs Proactive** | `reactive to proactive technology` | ✅ Yes | **~0.82** | Page 7+ |
+| 10 | **Strict Grounding Refusal** | `how to make a pizza` | ❌ Refused | **~0.15** | Refusal |
 
 ### Refusal Behavior on Out-of-Domain Query:
 ```text

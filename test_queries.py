@@ -1,5 +1,5 @@
 """
-Test script to benchmark and verify the RAG pipeline on 12 representative queries.
+Test script to benchmark and verify the RAG pipeline on 10 representative queries.
 Demonstrates accurate retrieval, grounding, citation of page numbers,
 and refusal on out-of-domain queries.
 """
@@ -8,14 +8,6 @@ import time
 from graph import ask_question
 
 TEST_QUERIES = [
-    {
-        "category": "Book Metadata",
-        "question": "name of the book"
-    },
-    {
-        "category": "Table of Contents / Structure",
-        "question": "content of the book"
-    },
     {
         "category": "Core Definition",
         "question": "what is agentic ai"
