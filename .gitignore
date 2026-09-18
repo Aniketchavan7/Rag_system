@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# Chroma vector database local files
+data/chroma_db/
+*.chroma
+
+# IDE
+.vscode/
+.idea/
+.DS_Store

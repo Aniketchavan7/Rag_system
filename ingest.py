@@ -1,0 +1,122 @@
+"""
+Document ingestion script.
+Extracts text from the Agentic AI eBook, chunks it with overlap,
+and stores the vector embeddings in the configured vector store (Chroma / Pinecone).
+"""
+
+import os
+import sys
+import argparse
+from typing import List, Dict, Any
+from pathlib import Path
+import pypdf
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+from config import (
+    PDF_FILE_PATH,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+    VECTOR_STORE_TYPE
+)
+from store import get_vector_store
+
+
+def extract_pages(pdf_path: Path) -> List[Dict[str, Any]]:
+    """Extract text and metadata page by page from the PDF."""
+    if not pdf_path.exists():
+        raise FileNotFoundError(f"Knowledge base PDF not found at {pdf_path}")
+
+    print(f"[INFO] Reading PDF from: {pdf_path.name}")
+    reader = pypdf.PdfReader(str(pdf_path))
+    total_pages = len(reader.pages)
+    print(f"[INFO] Total pages discovered: {total_pages}")
+
+    pages_data = []
+    for page_idx, page in enumerate(reader.pages):
+        page_num = page_idx + 1
+        raw_text = page.extract_text() or ""
+        cleaned_text = raw_text.strip()
+        if cleaned_text:
+            pages_data.append({
+                "page_num": page_num,
+                "text": cleaned_text
+            })
+
+    print(f"[INFO] Extracted text from {len(pages_data)} non-empty pages.")
+    return pages_data
+
+
+def chunk_documents(pages_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Split page contents into semantically cohesive overlapping chunks."""
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+        length_function=len,
+        separators=["\n\n", "\n", ". ", " ", ""]
+    )
+
+    all_chunks = []
+    chunk_counter = 0
+
+    for item in pages_data:
+        page_num = item["page_num"]
+        page_text = item["text"]
+
+        splits = splitter.split_text(page_text)
+        for sub_idx, chunk_content in enumerate(splits):
+            chunk_content = chunk_content.strip()
+            if len(chunk_content) < 30:  # Skip tiny noise fragments
+                continue
+
+            chunk_counter += 1
+            chunk_id = f"chunk_p{page_num}_{sub_idx + 1}"
+            all_chunks.append({
+                "id": chunk_id,
+                "text": chunk_content,
+                "metadata": {
+                    "source": "Agentic AI eBook",
+                    "page": page_num,
+                    "chunk_id": chunk_id,
+                    "length": len(chunk_content)
+                }
+            })
+
+    print(f"[INFO] Generated {len(all_chunks)} chunks (size: {CHUNK_SIZE}, overlap: {CHUNK_OVERLAP}).")
+    return all_chunks
+
+
+def run_ingestion(store_type: str = VECTOR_STORE_TYPE):
+    """Run end-to-end ingestion pipeline."""
+    print("=" * 60)
+    print(f"  Starting Ingestion Pipeline for '{PDF_FILE_PATH.name}'")
+    print(f"  Target Vector Store: {store_type.upper()}")
+    print("=" * 60)
+
+    # 1. Extract
+    pages_data = extract_pages(PDF_FILE_PATH)
+
+    # 2. Chunk
+    chunks = chunk_documents(pages_data)
+
+    # 3. Store
+    store = get_vector_store(store_type=store_type)
+    print(f"[INFO] Generating embeddings and indexing chunks into {store_type}...")
+    indexed_count = store.add_documents(chunks)
+
+    print("-" * 60)
+    print(f"[SUCCESS] Ingestion complete! Successfully indexed {indexed_count} chunks.")
+    print(f"[SUCCESS] Total entries in store: {store.count()}")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Ingest Agentic AI eBook into Vector DB")
+    parser.add_argument(
+        "--store",
+        type=str,
+        default=VECTOR_STORE_TYPE,
+        choices=["chroma", "pinecone"],
+        help="Target vector database (default: from .env)"
+    )
+    args = parser.parse_args()
+    run_ingestion(store_type=args.store)
