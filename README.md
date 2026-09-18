@@ -127,7 +127,7 @@ pip install -r requirements.txt
 ```
 
 ### 4. Setup environment variables
-Copy `.env.example` to `.env` and configure your API key:
+A `.env` file with an API key is already included for assignment testing and evaluation, allowing the project to run out of the box. You can also copy `.env.example` to `.env` or provide your own API key:
 ```bash
 # Windows
 copy .env.example .env
@@ -135,7 +135,7 @@ copy .env.example .env
 # Mac/Linux
 cp .env.example .env
 ```
-Open `.env` and set your `LLM_API_KEY`. Supported providers include any OpenAI-compatible endpoint (xKiro, Groq, OpenAI, etc.).
+Supported providers include any OpenAI-compatible endpoint (xKiro, Groq, OpenAI, etc.).
 - Default model: `qwen/qwen3.5-flash:free`
 - Default base URL: `https://api.xkiro.com/v1`
 

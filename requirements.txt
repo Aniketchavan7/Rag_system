@@ -8,7 +8,9 @@ langgraph>=0.1.0
 # Vector Databases & Embeddings
 chromadb>=0.4.22
 pinecone-client>=3.0.0
-sentence-transformers>=2.2.2
+sentence-transformers>=2.2.2,<4.0.0
+transformers>=4.40.0,<4.48.0
+numpy<2.0.0
 
 # PDF Processing
 pypdf>=4.0.0

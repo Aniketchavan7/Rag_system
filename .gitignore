@@ -9,10 +9,8 @@ venv/
 .venv/
 .venv-run/
 
-# Environment variables
-.env
-.env.*
-!.env.example
+# Environment variables (tracked for evaluation)
+# .env
 
 # Chroma vector database local files
 data/chroma_db/
