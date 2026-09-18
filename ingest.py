@@ -37,22 +37,64 @@ def extract_pages(pdf_path: Path) -> List[Dict[str, Any]]:
         raw_text = page.extract_text() or ""
         cleaned_text = raw_text.strip()
         if cleaned_text:
-            # Enrich Table of Contents page (Page 5) for sequential order and clarity
+            # Enrich Table of Contents page (Page 5)
             if page_num == 5 or "table of contents" in cleaned_text.lower():
                 cleaned_text = (
                     "Table of Contents / Book Outline (Chapters of the Agentic AI eBook):\n"
-                    "• Chapter 01: Introduction to Agentic AI\n"
-                    "• Chapter 02: Anatomy of an Agentic AI System\n"
-                    "• Chapter 03: Multi-Agent Systems\n"
-                    "• Chapter 04: Orchestrating Agentic AI Systems\n"
-                    "• Chapter 05: Your Readiness for Agentic AI\n"
-                    "• Chapter 06: Practical Applications of Agentic AI\n\n"
+                    "• Chapter 01: Introduction to Agentic AI (Pages 7-16)\n"
+                    "• Chapter 02: Anatomy of an Agentic AI System (Pages 17-28)\n"
+                    "• Chapter 03: Multi-Agent Systems (Pages 29-35)\n"
+                    "• Chapter 04: Orchestrating Agentic AI Systems (Pages 36-47)\n"
+                    "• Chapter 05: Your Readiness for Agentic AI (Pages 48-53)\n"
+                    "• Chapter 06: Practical Applications of Agentic AI (Pages 54-58)\n\n"
                     f"{cleaned_text}"
                 )
             # Enrich Title page (Page 3)
             elif page_num == 3:
                 cleaned_text = (
                     "Title of the Book: Agentic AI: An Executive's Guide to In-depth Understanding of Agentic AI\n"
+                    f"{cleaned_text}"
+                )
+            # Enrich Chapter 01 opening (Page 7)
+            elif page_num == 7:
+                cleaned_text = (
+                    "Chapter 01: Introduction to Agentic AI (Page 7)\n"
+                    "In this section (Chapter 01, starting on Page 7), the eBook defines what Agentic AI is and covers:\n"
+                    "• What is Agentic AI?\n"
+                    "• How does it stand apart from other AI, and what can it do?\n"
+                    "• What value does it bring?\n"
+                    "• How are businesses using it in the real world?\n\n"
+                    f"{cleaned_text}"
+                )
+            # Enrich Chapter 02 opening (Page 17)
+            elif page_num == 17:
+                cleaned_text = (
+                    "Chapter 02: Anatomy of an Agentic AI System (Page 17)\n"
+                    "In this section (Chapter 02, starting on Page 17), the eBook explores core building blocks (Perception, Reasoning, Planning, Learning, Execution).\n\n"
+                    f"{cleaned_text}"
+                )
+            # Enrich Chapter 03 opening (Page 29)
+            elif page_num == 29:
+                cleaned_text = (
+                    "Chapter 03: Multi-Agent Systems (Page 29)\n"
+                    f"{cleaned_text}"
+                )
+            # Enrich Chapter 04 opening (Page 36)
+            elif page_num == 36:
+                cleaned_text = (
+                    "Chapter 04: Orchestrating Agentic AI Systems (Page 36)\n"
+                    f"{cleaned_text}"
+                )
+            # Enrich Chapter 05 opening (Page 48)
+            elif page_num == 48:
+                cleaned_text = (
+                    "Chapter 05: Your Readiness for Agentic AI (Page 48)\n"
+                    f"{cleaned_text}"
+                )
+            # Enrich Chapter 06 opening (Page 54)
+            elif page_num == 54:
+                cleaned_text = (
+                    "Chapter 06: Practical Applications of Agentic AI (Page 54)\n"
                     f"{cleaned_text}"
                 )
 

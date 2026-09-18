@@ -57,13 +57,16 @@ def get_embedding_model() -> SentenceTransformer:
 def normalize_query(query: str) -> str:
     """
     Clean and normalize user query to handle common typos and abbreviations.
-    Examples: 'able of content' -> 'table of contents', 'toc' -> 'table of contents'.
+    Examples: 'able of content' -> 'table of contents', 'introdcution' -> 'introduction'.
     """
     q_norm = query.lower().strip()
     # Normalize typos and variations of Table of Contents
     q_norm = re.sub(r"\bable\s+of\s+content(s)?\b", "table of contents", q_norm)
     q_norm = re.sub(r"\btable\s+of\s+content\b", "table of contents", q_norm)
     q_norm = re.sub(r"\btoc\b", "table of contents", q_norm)
+    # Normalize typos for introduction
+    q_norm = re.sub(r"\bintrodcution\b", "introduction", q_norm)
+    q_norm = re.sub(r"\bintroducton\b", "introduction", q_norm)
     return q_norm
 
 
@@ -115,6 +118,8 @@ class BM25Ranker:
             # Exact multi-word phrase boost
             doc_raw = self.doc_texts[idx].lower()
             if "table of contents" in q_lower and "table of contents" in doc_raw:
+                score += 8.0
+            if "introduction" in q_lower and ("chapter 01" in doc_raw or "introduction to agentic ai" in doc_raw):
                 score += 8.0
             if "agentic ai" in q_lower and "agentic ai" in doc_raw:
                 score += 2.0
