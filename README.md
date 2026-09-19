@@ -89,16 +89,6 @@ pip install -r requirements.txt
 
 ### Configuration
 
-Copy `.env.example` to `.env` and provide your own API key:
-
-```bash
-# Windows
-copy .env.example .env
-
-# Mac/Linux
-cp .env.example .env
-```
-
 Open `.env` and set your credentials. Any OpenAI-compatible endpoint works:
 - **xKiro / Groq / OpenAI**: Set `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL`.
 - Generate your own API key from your preferred provider (e.g., xKiro, Groq, or OpenAI) and paste it into `LLM_API_KEY`.
