@@ -1,12 +1,11 @@
 """
 Document ingestion script.
 Extracts text from the Agentic AI eBook, chunks it with overlap,
-and stores the vector embeddings in the configured vector store (Chroma / Pinecone).
+and stores the vector embeddings in ChromaDB.
 """
 
 import os
 import sys
-import argparse
 from typing import List, Dict, Any
 from pathlib import Path
 import pypdf
@@ -16,7 +15,6 @@ from config import (
     PDF_FILE_PATH,
     CHUNK_SIZE,
     CHUNK_OVERLAP,
-    VECTOR_STORE_TYPE
 )
 from store import get_vector_store
 
@@ -146,11 +144,11 @@ def chunk_documents(pages_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return all_chunks
 
 
-def run_ingestion(store_type: str = VECTOR_STORE_TYPE):
+def run_ingestion():
     """Run end-to-end ingestion pipeline."""
     print("=" * 60)
     print(f"  Starting Ingestion Pipeline for '{PDF_FILE_PATH.name}'")
-    print(f"  Target Vector Store: {store_type.upper()}")
+    print(f"  Target Vector Store: ChromaDB")
     print("=" * 60)
 
     # 1. Extract
@@ -160,8 +158,8 @@ def run_ingestion(store_type: str = VECTOR_STORE_TYPE):
     chunks = chunk_documents(pages_data)
 
     # 3. Store
-    store = get_vector_store(store_type=store_type)
-    print(f"[INFO] Generating embeddings and indexing chunks into {store_type}...")
+    store = get_vector_store()
+    print(f"[INFO] Generating embeddings and indexing chunks into ChromaDB...")
     indexed_count = store.add_documents(chunks)
 
     print("-" * 60)
@@ -171,13 +169,5 @@ def run_ingestion(store_type: str = VECTOR_STORE_TYPE):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ingest Agentic AI eBook into Vector DB")
-    parser.add_argument(
-        "--store",
-        type=str,
-        default=VECTOR_STORE_TYPE,
-        choices=["chroma", "pinecone"],
-        help="Target vector database (default: from .env)"
-    )
-    args = parser.parse_args()
-    run_ingestion(store_type=args.store)
+    run_ingestion()
+

@@ -6,7 +6,7 @@ An end-to-end Retrieval-Augmented Generation (RAG) system in Python built for th
 
 ## 🏗️ Architecture Overview
 
-The system uses a stateful **LangGraph** workflow paired with a **Hybrid Vector Store** to guarantee grounded, hallucination-free responses.
+The system uses a stateful **LangGraph** workflow paired with a **Hybrid Vector Store**, designed to reduce hallucinations through retrieval thresholds, strict context-only prompting, and post-generation grounding checks.
 
 ```text
 User Query
@@ -30,7 +30,7 @@ Structured Response (final_answer, citations, confidence_score, is_grounded)
 ### Key Architectural Components
 
 1. **Hybrid Retrieval (Dense + BM25 + RRF)**:
-   - **Dense Embeddings**: `sentence-transformers/all-MiniLM-L6-v2` generates 384-dimensional dense vectors stored in local persistent ChromaDB (or Pinecone).
+   - **Dense Embeddings**: `sentence-transformers/all-MiniLM-L6-v2` generates 384-dimensional dense vectors stored in local persistent ChromaDB.
    - **Sparse Lexical Search**: BM25 ranking captures exact domain terms, abbreviations, and structural headers.
    - **Reciprocal Rank Fusion (RRF)**: Fuses rank lists (`k=60`) to balance semantic similarity with exact keyword matches without inflating scores.
    - **Query Normalization**: Handles informal phrasing and common typos before retrieval.

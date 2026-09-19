@@ -1,5 +1,5 @@
 """
-Vector database interface supporting Pinecone and local ChromaDB.
+Vector database interface using local ChromaDB.
 Provides unified search and indexing with Hybrid Search (Dense + BM25) and Reciprocal Rank Fusion.
 """
 
@@ -16,11 +16,7 @@ from chromadb.config import Settings
 from config import (
     EMBEDDING_MODEL_NAME,
     EMBEDDING_DIMENSION,
-    VECTOR_STORE_TYPE,
     CHROMA_DIR,
-    PINECONE_API_KEY,
-    PINECONE_INDEX_NAME,
-    PINECONE_ENVIRONMENT,
     TOP_K,
 )
 
@@ -300,104 +296,7 @@ class ChromaVectorStore:
         return self.collection.count()
 
 
-class PineconeVectorStore:
-    """Pinecone Cloud vector store implementation."""
-
-    def __init__(self, index_name: str = PINECONE_INDEX_NAME):
-        if not PINECONE_API_KEY:
-            raise ValueError("PINECONE_API_KEY is required to initialize PineconeVectorStore.")
-
-        from pinecone import Pinecone, ServerlessSpec
-
-        self.pc = Pinecone(api_key=PINECONE_API_KEY)
-        self.index_name = index_name
-        self.embedder = get_embedding_model()
-
-        # Check existing indexes or create new serverless index
-        existing_indexes = [idx.name for idx in self.pc.list_indexes()]
-        if self.index_name not in existing_indexes:
-            logger.info(f"Creating Pinecone index: {self.index_name}")
-            self.pc.create_index(
-                name=self.index_name,
-                dimension=EMBEDDING_DIMENSION,
-                metric="cosine",
-                spec=ServerlessSpec(cloud="aws", region=PINECONE_ENVIRONMENT)
-            )
-
-        self.index = self.pc.Index(self.index_name)
-
-    def add_documents(self, documents: List[Dict[str, Any]]) -> int:
-        """Embed and upsert documents into Pinecone index."""
-        if not documents:
-            return 0
-
-        texts = [doc["text"] for doc in documents]
-        embeddings = self.embedder.encode(texts, show_progress_bar=True).tolist()
-
-        # Prepare vectors for Pinecone
-        records = []
-        for doc, vector in zip(documents, embeddings):
-            metadata = doc.get("metadata", {}).copy()
-            metadata["text"] = doc["text"]
-            records.append((doc["id"], vector, metadata))
-
-        # Batch upsert (100 at a time)
-        batch_size = 100
-        for i in range(0, len(records), batch_size):
-            batch = records[i:i + batch_size]
-            self.index.upsert(vectors=batch)
-
-        return len(documents)
-
-    def search(self, query: str, top_k: int = TOP_K) -> List[Dict[str, Any]]:
-        """Search top-k most relevant chunks in Pinecone."""
-        norm_query = normalize_query(query)
-        query_vector = self.embedder.encode(norm_query).tolist()
-        query_res = self.index.query(
-            vector=query_vector,
-            top_k=top_k,
-            include_metadata=True
-        )
-
-        formatted_results = []
-        for match in query_res.get("matches", []):
-            meta = match.get("metadata", {})
-            text = meta.get("text", "")
-            page = meta.get("page", 1)
-            score = match.get("score", 0.0)
-            formatted_results.append({
-                "id": match.get("id"),
-                "text": text,
-                "page": page,
-                "score": round(float(score), 4),
-                "metadata": meta
-            })
-
-        return formatted_results
-
-    def count(self) -> int:
-        """Return total indexed items from index stats."""
-        stats = self.index.describe_index_stats()
-        return stats.get("total_vector_count", 0)
-
-
-def get_vector_store(store_type: Optional[str] = None):
-    """
-    Factory function returning the active vector store.
-    Gracefully falls back to Chroma if Pinecone credentials are not configured.
-    """
-    selected = (store_type or VECTOR_STORE_TYPE).lower()
-
-    if selected == "pinecone":
-        if not PINECONE_API_KEY:
-            logger.warning(
-                "[WARN] PINECONE_API_KEY is not set. Gracefully falling back to local ChromaDB."
-            )
-            return ChromaVectorStore()
-        try:
-            return PineconeVectorStore()
-        except Exception as err:
-            logger.error(f"[ERROR] Failed to connect to Pinecone ({err}). Falling back to ChromaDB.")
-            return ChromaVectorStore()
-
+def get_vector_store():
+    """Factory function returning the active vector store."""
     return ChromaVectorStore()
+

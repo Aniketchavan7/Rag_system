@@ -15,7 +15,6 @@ from config import (
     LLM_MODEL,
     TOP_K,
     CONFIDENCE_THRESHOLD,
-    VECTOR_STORE_TYPE
 )
 from store import get_vector_store
 

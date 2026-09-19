@@ -26,11 +26,6 @@ EMBEDDING_DIMENSION = 384  # Standard dimension for all-MiniLM-L6-v2
 VECTOR_STORE_TYPE = os.getenv("VECTOR_STORE_TYPE", "chroma").lower()
 CHROMA_DIR = BASE_DIR / "data" / "chroma_db"
 
-# Pinecone Configuration
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "").strip()
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "agentic-ai-index")
-PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT", "us-east-1")
-
 # Document Source Path
 PDF_FILE_PATH = BASE_DIR / os.getenv("PDF_FILE_PATH", "Knowlegde_base/Ebook-Agentic-AI.pdf")
 

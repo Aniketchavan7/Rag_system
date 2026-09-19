@@ -66,7 +66,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sample Queries (Humanized - typed like a real person would)
+# Sample queries for evaluation
 SAMPLE_QUERIES = [
     "what is agentic ai",
     "tell me about multi agent systems",
