@@ -1,9 +1,3 @@
-"""
-Streamlit Web Interface for the Agentic AI eBook RAG Chatbot.
-Provides interactive chat, clickable sample queries, confidence indicators,
-and expandable inspection of retrieved context chunks.
-"""
-
 import time
 import streamlit as st
 
@@ -11,7 +5,6 @@ from config import LLM_MODEL, VECTOR_STORE_TYPE
 from store import get_vector_store
 from graph import ask_question
 
-# Page Configuration
 st.set_page_config(
     page_title="Agentic AI eBook - RAG Assistant",
     page_icon="🤖",
@@ -19,7 +12,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
 st.markdown("""
 <style>
     .main-title {
@@ -66,7 +58,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sample queries for evaluation
 SAMPLE_QUERIES = [
     "what is agentic ai",
     "tell me about multi agent systems",
@@ -79,19 +70,15 @@ SAMPLE_QUERIES = [
     "reactive to proactive technology"
 ]
 
-# Initialize Session State for Chat History
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "input_query" not in st.session_state:
     st.session_state.input_query = ""
 
-
-# Sidebar
 with st.sidebar:
     st.title("System Status")
     st.markdown("---")
 
-    # Knowledge Base Stats
     try:
         store = get_vector_store()
         total_chunks = store.count()
@@ -119,8 +106,6 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-
-# Main View
 st.markdown('<div class="main-title">Agentic AI Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Grounded Q&A over the Agentic AI eBook using LangGraph and ChromaDB</div>', unsafe_allow_html=True)
 
@@ -147,7 +132,6 @@ def render_retrieved_chunks(chunks: list):
             st.info(c.get("text", ""))
 
 
-# Render Chat History
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         with st.chat_message("user"):
@@ -158,8 +142,6 @@ for msg in st.session_state.messages:
             render_confidence_badge(msg.get("confidence_score", 0.0), msg.get("is_grounded", False))
             render_retrieved_chunks(msg.get("chunks", []))
 
-
-# Handle input from sample button or chat input
 user_prompt = None
 if "selected_sample" in st.session_state and st.session_state.selected_sample:
     user_prompt = st.session_state.selected_sample
