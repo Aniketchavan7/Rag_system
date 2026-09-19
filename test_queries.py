@@ -45,6 +45,10 @@ TEST_QUERIES = [
         "question": "reactive to proactive technology"
     },
     {
+        "category": "Table of Contents",
+        "question": "table of contents"
+    },
+    {
         "category": "Strict Grounding (Negative Test)",
         "question": "how to make a pizza"
     }

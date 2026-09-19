@@ -34,3 +34,8 @@ TOP_K = int(os.getenv("TOP_K", "5"))
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "700"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.45"))
+
+# Front-matter pages to exclude from indexing (cover blurb, title page, preface).
+# Kept page 5 (Table of Contents) so chapter and overview questions work cleanly,
+# and page 6 so empirical McKinsey business statistics remain available.
+EXCLUDED_PAGES = [2, 3, 4]

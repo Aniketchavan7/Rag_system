@@ -172,7 +172,8 @@ class ChromaVectorStore:
 
         # dense search
         query_vector = self.embedder.encode(norm_query).tolist()
-        fetch_limit = max(top_k * 3, 20)
+        # Fetch a wide enough candidate pool so docs ranking ~25 in dense aren't falsely clamped to rank 100 in RRF
+        fetch_limit = max(top_k * 6, 40)
         dense_res = self.collection.query(
             query_embeddings=[query_vector],
             n_results=min(fetch_limit, max(1, self.collection.count())),

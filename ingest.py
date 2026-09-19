@@ -15,6 +15,7 @@ from config import (
     PDF_FILE_PATH,
     CHUNK_SIZE,
     CHUNK_OVERLAP,
+    EXCLUDED_PAGES,
 )
 from store import get_vector_store
 
@@ -28,6 +29,8 @@ def extract_pages(pdf_path: Path) -> List[Dict[str, Any]]:
 
     for page_idx, page in enumerate(reader.pages):
         page_num = page_idx + 1
+        if page_num in EXCLUDED_PAGES:
+            continue
         raw_text = page.extract_text() or ""
         cleaned_text = raw_text.strip()
         if cleaned_text:
