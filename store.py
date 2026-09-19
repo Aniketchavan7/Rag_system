@@ -224,7 +224,7 @@ class ChromaVectorStore:
             d_rank = d_info["rank"] if d_info else 100
             s_rank = s_info["rank"] if s_info else 100
 
-            rrf_score = (1.0 / (k_rrf + d_rank)) + (1.0 / (k_rrf + s_rank))
+            rrf_score = (0.6 / (k_rrf + d_rank)) + (0.4 / (k_rrf + s_rank))
 
             # calibrated similarity score
             if d_info and s_info:
