@@ -1,64 +1,55 @@
-# Agentic AI eBook - Strictly Grounded RAG Chatbot
+# RAG Chatbot — Agentic AI eBook
 
-An end-to-end Retrieval-Augmented Generation (RAG) system in Python built for the Agentic AI eBook evaluation. The system answers user queries strictly grounded in the **Agentic AI eBook**, refusing out-of-domain questions and citing exact page numbers.
+RAG system that answers questions from the Agentic AI eBook (60 pages). Uses LangGraph for the pipeline, ChromaDB for storage, and a hybrid dense+BM25 search. Refuses out-of-domain questions and cites page numbers.
 
----
+## How it works
 
-## 🏗️ Architecture Overview
-
-The system uses a stateful **LangGraph** workflow paired with a **Hybrid Vector Store**, designed to reduce hallucinations through retrieval thresholds, strict context-only prompting, and post-generation grounding checks.
-
-```text
+```
 User Query
     │
     ▼
-[1. retrieve_node] ──► Hybrid Search (Dense all-MiniLM-L6-v2 + BM25 Lexical + RRF)
+retrieve ──► hybrid search (dense embeddings + BM25 + reciprocal rank fusion)
     │
     ▼
-[2. evaluate_relevance_node] ──► Relevance threshold check (CONFIDENCE_THRESHOLD = 0.45)
-    │                            (Out-of-domain queries flagged for early refusal)
-    ▼
-[3. generate_node] ──► LLM prompt with strict grounding constraints (Page citations required)
+evaluate ──► checks if top chunk score is above 0.45, flags refusal if not
     │
     ▼
-[4. verify_grounding_node] ──► Post-generation verification, refusal detection & confidence scoring
+generate ──► LLM answers strictly from retrieved chunks, must cite pages
     │
     ▼
-Structured Response (final_answer, citations, confidence_score, is_grounded)
+verify   ──► catches LLM errors, detects refusals, assigns final confidence
+    │
+    ▼
+Response: { answer, chunks, confidence_score, is_grounded }
 ```
 
-### Key Architectural Components
+**Retrieval** — embeddings via `all-MiniLM-L6-v2` (384-dim) stored in ChromaDB. Also runs BM25 over the same corpus for keyword matching. Results fused with RRF (k=60), blended score is 75% dense + 25% BM25 (picked this ratio because dense alone missed some exact-term matches like "multi-agent" but BM25 alone had no semantic understanding — 75/25 gave the best results on manual testing).
 
-1. **Hybrid Retrieval (Dense + BM25 + RRF)**:
-   - **Dense Embeddings**: `sentence-transformers/all-MiniLM-L6-v2` generates 384-dimensional dense vectors stored in local persistent ChromaDB.
-   - **Sparse Lexical Search**: BM25 ranking captures exact domain terms, abbreviations, and structural headers.
-   - **Reciprocal Rank Fusion (RRF)**: Fuses rank lists (`k=60`) to balance semantic similarity with exact keyword matches without inflating scores.
-   - **Query Normalization**: Handles informal phrasing and common typos before retrieval.
+**Threshold** — 0.45 confidence threshold was picked after running the test suite against a few values. Lower values (0.3) let through too many garbage matches for off-topic queries, higher (0.6) started refusing valid but loosely worded questions. 0.45 was the sweet spot for this particular PDF.
 
-2. **LangGraph Pipeline**:
-   - **`retrieve`**: Fetches top-$k$ relevant chunks preserving page metadata and scores.
-   - **`evaluate`**: Evaluates top chunk similarity. If below the relevance threshold ($0.45$), it bypasses the LLM and issues an immediate grounded refusal.
-   - **`generate`**: Instructs the LLM to synthesize an answer strictly from provided chunks and cite source pages.
-   - **`verify`**: Ensures LLM errors or refusals are never marked as grounded, assigning appropriate confidence scores ($0.0$ for errors, $\le 0.15$ for refusals, up to $1.0$ for grounded facts).
+**Grounding** — system prompt forces page citations, and a post-generation verify step catches LLM errors or hallucinated refusals. Not foolproof but works well enough in practice.
 
-3. **Dual Interfaces**:
-   - **Streamlit Web UI**: Interactive chat interface with confidence badges, expandable chunk citations, sample questions, and a direct link to FastAPI docs.
-   - **FastAPI REST Service**: Production endpoints for programmatic access and health monitoring.
+## Sample queries
 
----
+These are the queries I tested with during development:
 
-## 📡 API Request & Response Example
+- `what is agentic ai`
+- `tell me about multi agent systems`
+- `how companies using agentic ai`
+- `what are the layers in agentic ai architecture`
+- `multi agent sales forecasting example`
+- `challenges in multi agent systems`
+- `reactive to proactive technology`
+- `how to make a pizza` ← should refuse (out of domain)
 
-### Endpoint: `POST /query` (or `POST /chat`)
+## API example
 
-#### cURL Request:
 ```bash
 curl -X POST "http://127.0.0.1:8000/query" \
      -H "Content-Type: application/json" \
      -d '{"question": "what is agentic ai"}'
 ```
 
-#### JSON Response:
 ```json
 {
   "final_answer": "Based on the provided context from the Agentic AI eBook, Agentic AI is defined by its ability to understand context beyond literal instructions, break down complex goals, make autonomous decisions, and learn dynamically (Page 8). It shifts computing from reactive execution to proactive problem-solving (Page 7).",
@@ -67,13 +58,7 @@ curl -X POST "http://127.0.0.1:8000/query" \
       "chunk_id": "chunk_p8_0",
       "page": 8,
       "score": 0.885,
-      "text": "At its core, Agentic AI is defined by its ability to understand context beyond literal instructions, break down complex goals, make autonomous decisions, and learn and adapt dynamically..."
-    },
-    {
-      "chunk_id": "chunk_p7_1",
-      "page": 7,
-      "score": 0.852,
-      "text": "Introduction to Agentic AI. The shift from reactive to proactive technology..."
+      "text": "At its core, Agentic AI is defined by its ability to understand context beyond literal instructions..."
     }
   ],
   "confidence_score": 0.875,
@@ -82,90 +67,55 @@ curl -X POST "http://127.0.0.1:8000/query" \
 }
 ```
 
-#### Out-of-Domain Refusal Example:
-```bash
-curl -X POST "http://127.0.0.1:8000/query" \
-     -H "Content-Type: application/json" \
-     -d '{"question": "how to make a pizza"}'
-```
-
-Response:
+Out-of-domain queries get refused:
 ```json
 {
   "final_answer": "I cannot answer this question because the provided Agentic AI eBook does not contain relevant information on this topic.",
-  "retrieved_context_chunks": [],
   "confidence_score": 0.15,
-  "is_grounded": false,
-  "execution_time_sec": 0.05
+  "is_grounded": false
 }
 ```
 
----
+## Setup
 
-## 🚀 Setup & Installation
-
-### 1. Clone the repository
 ```bash
 git clone https://github.com/Aniketchavan7/Rag_system.git
 cd Rag_system
-```
-
-### 2. Create and activate a virtual environment
-```bash
-# Windows
 python -m venv venv
-.\venv\Scripts\activate
-
-# Mac/Linux
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-```bash
+.\venv\Scripts\activate       # windows
+source venv/bin/activate      # mac/linux
 pip install -r requirements.txt
 ```
 
-### 4. Setup environment variables
-A `.env` file with an API key is already included for assignment testing and evaluation, allowing the project to run out of the box. You can also copy `.env.example` to `.env` or provide your own API key:
+A `.env` with a test API key is included so the project runs out of the box. You can swap in your own key if needed — any OpenAI-compatible endpoint works (xKiro, Groq, OpenAI, etc).
+
+## Running
+
 ```bash
-# Windows
-copy .env.example .env
-
-# Mac/Linux
-cp .env.example .env
-```
-Supported providers include any OpenAI-compatible endpoint (xKiro, Groq, OpenAI, etc.).
-- Default model: `qwen/qwen3.5-flash:free`
-- Default base URL: `https://api.xkiro.com/v1`
-
----
-
-## 💻 How to Run
-
-### Step 1: Ingest the eBook into Vector DB
-Extracts and chunks `Knowlegde_base/Ebook-Agentic-AI.pdf` into local persistent ChromaDB:
-```bash
+# 1. ingest the ebook into chromadb
 python ingest.py
-```
 
-### Step 2: Run the Streamlit Chat UI
-```bash
+# 2. start the chat ui
 streamlit run app.py
-```
-Open [http://localhost:8501](http://localhost:8501) in your browser.
+# open http://localhost:8501
 
-### Step 3: Run the FastAPI REST Server (Optional)
-```bash
+# 3. (optional) start the api server
 uvicorn server:app --host 127.0.0.1 --port 8000 --reload
+# swagger docs at http://127.0.0.1:8000/docs
 ```
-Interactive Swagger documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
----
+## Tests
 
-## 🧪 Run Automated Verification Tests
-
-Benchmark the pipeline across in-domain queries, architecture questions, multi-agent scenarios, and out-of-domain refusals:
 ```bash
 python test_queries.py
 ```
+
+Runs 9 in-domain queries + 1 negative test (pizza question) and prints confidence scores.
+
+## Known limitations
+
+- The 0.45 threshold is tuned for this specific PDF. A different document with different vocabulary density would probably need retuning.
+- BM25 phrase boosts are hardcoded for common queries about this ebook (like "what is agentic ai"). This helps retrieval quality but won't generalize to other documents without changes.
+- No conversation memory — each query is independent. Adding chat history would need state management in the LangGraph pipeline.
+- ChromaDB runs in-process, which is fine for a demo but wouldn't scale for production. Would need a proper vector DB deployment.
+- The grounding check is heuristic (keyword matching for refusal phrases). A proper approach would use an NLI model to verify entailment, but that seemed overkill for this assignment.
