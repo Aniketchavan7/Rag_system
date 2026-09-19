@@ -87,7 +87,21 @@ source venv/bin/activate      # mac/linux
 pip install -r requirements.txt
 ```
 
-A `.env` with a test API key is included so the project runs out of the box. You can swap in your own key if needed — any OpenAI-compatible endpoint works (xKiro, Groq, OpenAI, etc).
+### Configuration
+
+Copy `.env.example` to `.env` and provide your own API key:
+
+```bash
+# Windows
+copy .env.example .env
+
+# Mac/Linux
+cp .env.example .env
+```
+
+Open `.env` and set your credentials. Any OpenAI-compatible endpoint works:
+- **xKiro / Groq / OpenAI**: Set `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL`.
+- Generate your own API key from your preferred provider (e.g., xKiro, Groq, or OpenAI) and paste it into `LLM_API_KEY`.
 
 ## Running
 
@@ -115,7 +129,7 @@ Runs 9 in-domain queries + 1 negative test (pizza question) and prints confidenc
 ## Known limitations
 
 - The 0.45 threshold is tuned for this specific PDF. A different document with different vocabulary density would probably need retuning.
-- BM25 phrase boosts are hardcoded for common queries about this ebook (like "what is agentic ai"). This helps retrieval quality but won't generalize to other documents without changes.
-- No conversation memory — each query is independent. Adding chat history would need state management in the LangGraph pipeline.
-- ChromaDB runs in-process, which is fine for a demo but wouldn't scale for production. Would need a proper vector DB deployment.
-- The grounding check is heuristic (keyword matching for refusal phrases). A proper approach would use an NLI model to verify entailment, but that seemed overkill for this assignment.
+- Retrieval uses genuine dense embeddings + BM25 without hardcoded phrase boosts. Queries with sparse keyword overlap rely primarily on semantic cosine similarity.
+- No conversation memory — each query is independent. Adding multi-turn chat history would require state management in the LangGraph pipeline.
+- ChromaDB runs in-process, which is fine for a demo but would need a dedicated vector database service for production scale.
+- The grounding check is heuristic (refusal phrase matching and citation verification). A production pipeline would benefit from an NLI model to verify claim entailment.

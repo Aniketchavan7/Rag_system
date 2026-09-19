@@ -124,6 +124,29 @@ with st.sidebar:
 st.markdown('<div class="main-title">Agentic AI Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Grounded Q&A over the Agentic AI eBook using LangGraph and ChromaDB</div>', unsafe_allow_html=True)
 
+def render_confidence_badge(score: float, grounded: bool):
+    pct = int(score * 100)
+    col1, _ = st.columns([2, 8])
+    with col1:
+        if pct >= 70 and grounded:
+            st.markdown(f'<span class="score-badge-high">Confidence: {pct}% (Grounded)</span>', unsafe_allow_html=True)
+        elif pct >= 45 and grounded:
+            st.markdown(f'<span class="score-badge-med">Confidence: {pct}% (Moderate)</span>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<span class="score-badge-low">Confidence: {pct}% (Out of Domain)</span>', unsafe_allow_html=True)
+
+
+def render_retrieved_chunks(chunks: list):
+    if not chunks:
+        return
+    with st.expander(f"Retrieved Chunks ({len(chunks)})"):
+        for i, c in enumerate(chunks, 1):
+            st.markdown(
+                f"**Source #{i} — Page {c.get('page', '?')}** | Similarity Score: `{c.get('score', 0):.3f}`"
+            )
+            st.info(c.get("text", ""))
+
+
 # Render Chat History
 for msg in st.session_state.messages:
     if msg["role"] == "user":
@@ -132,30 +155,8 @@ for msg in st.session_state.messages:
     else:
         with st.chat_message("assistant"):
             st.markdown(msg["content"])
-
-            # Confidence badge
-            score = msg.get("confidence_score", 0.0)
-            grounded = msg.get("is_grounded", False)
-            pct = int(score * 100)
-
-            col1, col2 = st.columns([2, 8])
-            with col1:
-                if pct >= 70 and grounded:
-                    st.markdown(f'<span class="score-badge-high">Confidence: {pct}% (Grounded)</span>', unsafe_allow_html=True)
-                elif pct >= 45 and grounded:
-                    st.markdown(f'<span class="score-badge-med">Confidence: {pct}% (Moderate)</span>', unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<span class="score-badge-low">Confidence: {pct}% (Out of Domain)</span>', unsafe_allow_html=True)
-
-            # Retrieved chunks expander
-            chunks = msg.get("chunks", [])
-            if chunks:
-                with st.expander(f"Retrieved Chunks ({len(chunks)})"):
-                    for i, c in enumerate(chunks, 1):
-                        st.markdown(
-                            f"**Source #{i} — Page {c.get('page', '?')}** | Similarity Score: `{c.get('score', 0):.3f}`"
-                        )
-                        st.info(c.get("text", ""))
+            render_confidence_badge(msg.get("confidence_score", 0.0), msg.get("is_grounded", False))
+            render_retrieved_chunks(msg.get("chunks", []))
 
 
 # Handle input from sample button or chat input
@@ -167,12 +168,10 @@ else:
     user_prompt = st.chat_input("Ask anything from the Agentic AI eBook...")
 
 if user_prompt:
-    # Append user message
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     with st.chat_message("user"):
         st.markdown(user_prompt)
 
-    # Generate Assistant Response
     with st.chat_message("assistant"):
         with st.spinner("Searching eBook knowledge base and verifying grounding..."):
             start_t = time.time()
@@ -185,26 +184,9 @@ if user_prompt:
             chunks = result["retrieved_context_chunks"]
 
             st.markdown(answer)
+            render_confidence_badge(score, grounded)
+            render_retrieved_chunks(chunks)
 
-            pct = int(score * 100)
-            col1, col2 = st.columns([2, 8])
-            with col1:
-                if pct >= 70 and grounded:
-                    st.markdown(f'<span class="score-badge-high">Confidence: {pct}% (Grounded)</span>', unsafe_allow_html=True)
-                elif pct >= 45 and grounded:
-                    st.markdown(f'<span class="score-badge-med">Confidence: {pct}% (Moderate)</span>', unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<span class="score-badge-low">Confidence: {pct}% (Out of Domain)</span>', unsafe_allow_html=True)
-
-            if chunks:
-                with st.expander(f"Retrieved Chunks ({len(chunks)})"):
-                    for i, c in enumerate(chunks, 1):
-                        st.markdown(
-                            f"**Source #{i} — Page {c.get('page', '?')}** | Similarity Score: `{c.get('score', 0):.3f}`"
-                        )
-                        st.info(c.get("text", ""))
-
-    # Save to history
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer,
