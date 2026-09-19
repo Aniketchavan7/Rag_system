@@ -37,30 +37,25 @@ def create_llm() -> ChatOpenAI:
 
 
 def retrieve_node(state: RAGState) -> Dict[str, Any]:
-    """Fetch top-k chunks from vector store."""
     question = state["question"].strip()
     store = get_vector_store()
-
     chunks = store.search(query=question, top_k=TOP_K)
 
     context_parts = []
     for idx, chunk in enumerate(chunks, 1):
         page = chunk.get("page", "Unknown")
-        cid = chunk.get("id", f"chunk_{idx}")
         score = chunk.get("score", 0.0)
         context_parts.append(
             f"[Source {idx} | Page {page} | Score: {score:.3f}]\n{chunk['text']}"
         )
 
-    context_text = "\n\n---\n\n".join(context_parts)
     return {
         "retrieved_chunks": chunks,
-        "context_text": context_text
+        "context_text": "\n\n---\n\n".join(context_parts)
     }
 
 
 def evaluate_relevance_node(state: RAGState) -> Dict[str, Any]:
-    """Check if retrieved chunks are relevant enough to bother calling the LLM."""
     chunks = state.get("retrieved_chunks", [])
     if not chunks:
         return {"confidence_score": 0.0, "refusal": True}
@@ -68,11 +63,13 @@ def evaluate_relevance_node(state: RAGState) -> Dict[str, Any]:
     top_score = max(c.get("score", 0.0) for c in chunks)
     avg_score = sum(c.get("score", 0.0) for c in chunks) / len(chunks)
 
-    # 0.45 was picked after testing — lower lets garbage through, higher refuses valid queries
+    # 0.45 cut-off: anything lower tended to pull in unrelated chapters for off-topic questions
     if top_score < CONFIDENCE_THRESHOLD:
         return {"confidence_score": round(top_score, 3), "refusal": True}
 
-    # 70/30 blend: top score matters more than average, but average keeps it honest
+    # 70/30 blend: using top score alone made scores jumpy when a single chunk had a high lexical hit,
+    # but using pure average dragged down valid answers that only lived in one specific chunk.
+    # 70/30 gave the most stable scores across the test queries.
     return {
         "confidence_score": round((top_score * 0.7) + (avg_score * 0.3), 3),
         "refusal": False
@@ -80,7 +77,6 @@ def evaluate_relevance_node(state: RAGState) -> Dict[str, Any]:
 
 
 def generate_node(state: RAGState) -> Dict[str, Any]:
-    """Call the LLM with strict grounding instructions. Skip if we already decided to refuse."""
     if state.get("refusal", False):
         refusal_msg = (
             "I cannot answer this question because the provided Agentic AI eBook "
@@ -88,7 +84,7 @@ def generate_node(state: RAGState) -> Dict[str, Any]:
         )
         return {"answer": refusal_msg, "is_grounded": False, "error": False}
 
-    if not LLM_API_KEY or LLM_API_KEY.strip() in ("", "your_llm_api_key_here"):
+    if not LLM_API_KEY or LLM_API_KEY.strip() in ("", "your_api_key_here"):
         return {
             "answer": "Error: LLM API key is not configured. Please set a valid LLM_API_KEY in your .env file.",
             "is_grounded": False,
@@ -134,7 +130,6 @@ def generate_node(state: RAGState) -> Dict[str, Any]:
 
 
 def verify_grounding_node(state: RAGState) -> Dict[str, Any]:
-    """Last sanity check — make sure LLM errors don't get returned as grounded answers."""
     answer = state.get("answer", "").strip()
     retrieved = state.get("retrieved_chunks", [])
     current_score = state.get("confidence_score", 0.0)
@@ -148,7 +143,6 @@ def verify_grounding_node(state: RAGState) -> Dict[str, Any]:
     if has_error:
         return {"confidence_score": 0.0, "is_grounded": False}
 
-    # Refusal check: early refusal from low similarity, or LLM explicitly refused
     has_citations = "page " in answer.lower() or "(page" in answer.lower()
     if state.get("refusal", False):
         is_refusal = True
@@ -163,6 +157,9 @@ def verify_grounding_node(state: RAGState) -> Dict[str, Any]:
         final_score = min(current_score, 0.15)
         is_grounded = False
     else:
+        # clamp grounded answers to [0.45, 1.0] — if the chunks passed relevance and the LLM
+        # produced cited facts, it shouldn't score below the acceptance threshold.
+        # the 0.0-0.15 range is reserved for errors and refusals.
         final_score = min(1.0, max(0.45, current_score))
         is_grounded = True
 
