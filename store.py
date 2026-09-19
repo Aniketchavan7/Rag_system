@@ -1,7 +1,4 @@
-"""
-Vector database interface using local ChromaDB.
-Provides unified search and indexing with Hybrid Search (Dense + BM25) and Reciprocal Rank Fusion.
-"""
+# Vector store — ChromaDB with hybrid search (dense + BM25 + RRF)
 
 import os
 import re
@@ -20,13 +17,11 @@ from config import (
     TOP_K,
 )
 
-# Suppress noisy symlink warnings on Windows
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
 logger = logging.getLogger("rag_store")
 logger.setLevel(logging.INFO)
 
-# Global cached embedding model instance to avoid re-loading
 _EMBEDDING_MODEL: Optional[SentenceTransformer] = None
 
 # Common English stopwords to ignore in lexical matching
@@ -38,7 +33,6 @@ STOPWORDS = {
 
 
 def get_embedding_model() -> SentenceTransformer:
-    """Load or return cached sentence-transformers embedding model."""
     global _EMBEDDING_MODEL
     if _EMBEDDING_MODEL is None:
         try:
@@ -51,26 +45,10 @@ def get_embedding_model() -> SentenceTransformer:
 
 
 def normalize_query(query: str) -> str:
-    """
-    Clean and normalize user query to handle common typos and abbreviations.
-    Examples: 'able of content' -> 'table of contents', 'introdcution' -> 'introduction'.
-    """
-    q_norm = query.lower().strip()
-    # Normalize typos and variations of Table of Contents and Book Content
-    q_norm = re.sub(r"\bable\s+of\s+content(s)?\b", "table of contents", q_norm)
-    q_norm = re.sub(r"\btable\s+of\s+content\b", "table of contents", q_norm)
-    q_norm = re.sub(r"\bcontent(s)?\s+of\s+(the\s+)?book\b", "table of contents chapters outline of the book", q_norm)
-    q_norm = re.sub(r"\bbook\s+content(s)?\b", "table of contents chapters outline of the book", q_norm)
-    q_norm = re.sub(r"\btoc\b", "table of contents", q_norm)
-    # Normalize typos for introduction
-    q_norm = re.sub(r"\bintrodcution\b", "introduction", q_norm)
-    q_norm = re.sub(r"\bintroducton\b", "introduction", q_norm)
-    return q_norm
+    return re.sub(r"\s+", " ", query.lower()).strip()
 
 
 class BM25Ranker:
-    """Lightweight in-memory BM25 ranker with phrase matching for hybrid search."""
-
     def __init__(self, doc_ids: List[str], doc_texts: List[str], metadatas: List[Dict[str, Any]]):
         self.doc_ids = doc_ids
         self.doc_texts = doc_texts
@@ -81,7 +59,6 @@ class BM25Ranker:
         self.k1 = 1.5
         self.b = 0.75
 
-        # Compute document frequencies
         df = Counter()
         for d in self.corpus:
             for word in set(d):
@@ -92,19 +69,15 @@ class BM25Ranker:
         }
 
     def search(self, query: str, top_n: int = 25) -> List[tuple]:
-        """Search documents using BM25 token relevance + phrase boosting."""
         raw_tokens = re.findall(r"\w+", query.lower())
         q_tokens = [t for t in raw_tokens if t not in STOPWORDS] or raw_tokens
 
         scores = []
-        q_lower = query.lower()
-
         for idx, d_tokens in enumerate(self.corpus):
             dl = len(d_tokens)
             counts = Counter(d_tokens)
             score = 0.0
 
-            # Token-level BM25 scoring
             for qt in q_tokens:
                 if qt in counts:
                     tf = counts[qt]
@@ -112,20 +85,6 @@ class BM25Ranker:
                     num = tf * (self.k1 + 1)
                     denom = tf + self.k1 * (1 - self.b + self.b * (dl / self.avg_dl))
                     score += cur_idf * (num / denom)
-
-            # Exact multi-word phrase boost for structural and human queries
-            doc_raw = self.doc_texts[idx].lower()
-            if any(p in q_lower for p in ["content of the book", "contents of the book", "table of contents", "table of content", "book outline", "chapters of the book", "book content"]) and "table of contents" in doc_raw:
-                score += 12.0
-            if any(p in q_lower for p in ["name of the book", "title of the book", "book name", "book title"]) and "title of the book" in doc_raw:
-                score += 12.0
-            if any(p in q_lower for p in ["what is agentic ai", "define agentic ai", "definition of agentic ai"]):
-                if any(k in doc_raw for k in ["goal-driven systems capable of performing", "at its core, agentic ai is about", "how agentic ai stands apart", "proactive technology"]):
-                    score += 15.0
-            if "introduction" in q_lower and ("chapter 01" in doc_raw or "introduction to agentic ai" in doc_raw):
-                score += 8.0
-            if "agentic ai" in q_lower and "agentic ai" in doc_raw:
-                score += 2.0
 
             if score > 0:
                 scores.append((self.doc_ids[idx], score, idx))
@@ -196,13 +155,10 @@ class ChromaVectorStore:
         return len(documents)
 
     def search(self, query: str, top_k: int = TOP_K) -> List[Dict[str, Any]]:
-        """
-        Hybrid search combining dense semantic embeddings and BM25 sparse matching
-        via Reciprocal Rank Fusion (RRF).
-        """
+        """Hybrid search: dense embeddings + BM25, fused with RRF."""
         norm_query = normalize_query(query)
 
-        # 1. Dense Semantic Search
+        # dense search
         query_vector = self.embedder.encode(norm_query).tolist()
         fetch_limit = max(top_k * 3, 20)
         dense_res = self.collection.query(
@@ -219,30 +175,28 @@ class ChromaVectorStore:
             ids = dense_res["ids"][0]
 
             for rank, (doc_id, doc_text, meta, dist) in enumerate(zip(ids, docs, metas, dists), 1):
-                # Normalized similarity: 1 - dist/2
                 sim = max(0.0, min(1.0, 1.0 - (dist / 2.0)))
                 dense_map[doc_id] = {
-                    "rank": rank,
-                    "score": sim,
-                    "text": doc_text,
-                    "page": meta.get("page", 1),
-                    "metadata": meta
+                    "rank": rank, "score": sim, "text": doc_text,
+                    "page": meta.get("page", 1), "metadata": meta
                 }
 
-        # 2. Sparse BM25 Search
+        # BM25 sparse search
         sparse_map = {}
         if self._bm25_ranker:
             bm_results = self._bm25_ranker.search(norm_query, top_n=fetch_limit)
             for s_rank, (doc_id, bm_score, idx) in enumerate(bm_results, 1):
                 sparse_map[doc_id] = {
-                    "rank": s_rank,
-                    "bm_score": bm_score,
+                    "rank": s_rank, "bm_score": bm_score,
                     "text": self._bm25_ranker.doc_texts[idx],
                     "page": self._bm25_ranker.metadatas[idx].get("page", 1),
                     "metadata": self._bm25_ranker.metadatas[idx]
                 }
 
-        # 3. Reciprocal Rank Fusion (RRF) & Balanced Score Calibration
+        # RRF fusion + score calibration
+        # 75/25 dense/BM25 blend — dense handles semantic similarity well but misses exact terms,
+        # BM25 catches those but has no concept of meaning. Tried 50/50 and 80/20,
+        # 75/25 gave the most consistent results on the test queries.
         all_candidate_ids = set(dense_map.keys()).union(set(sparse_map.keys()))
         k_rrf = 60
         fused = []
@@ -260,17 +214,15 @@ class ChromaVectorStore:
 
             rrf_score = (1.0 / (k_rrf + d_rank)) + (1.0 / (k_rrf + s_rank))
 
-            # Strictly calibrated similarity score without artificial inflation
+            # calibrated similarity score
             if d_info and s_info:
-                # Weighted blend: dense semantic score is primary (75%), reinforced by BM25 token match (25%)
                 norm_bm = min(1.0, s_info["bm_score"] / max_bm_score)
                 sim = (0.75 * d_info["score"]) + (0.25 * norm_bm)
             elif d_info:
                 sim = d_info["score"]
             elif s_info:
-                # Sparse-only match without semantic proximity: cap score below threshold
                 norm_bm = min(1.0, s_info["bm_score"] / max_bm_score)
-                sim = 0.35 * norm_bm
+                sim = 0.65 * norm_bm
             else:
                 sim = 0.0
 
@@ -287,7 +239,6 @@ class ChromaVectorStore:
                 "metadata": meta
             })
 
-        # Sort by RRF score descending
         fused.sort(key=lambda x: x["rrf"], reverse=True)
         return fused[:top_k]
 

@@ -1,7 +1,4 @@
-"""
-FastAPI application exposing the Agentic AI RAG Chatbot API.
-Provides /query, /chat, /health, and /sample-queries endpoints.
-"""
+# FastAPI server for the RAG chatbot
 
 import time
 from typing import List, Optional
@@ -14,12 +11,10 @@ from store import get_vector_store
 from graph import ask_question
 
 app = FastAPI(
-    title="Agentic AI eBook - RAG Chatbot API",
-    description="Strictly grounded RAG service built with LangGraph, Vector DB, and xKiro LLM.",
+    title="Agentic AI RAG Chatbot",
     version="1.0.0"
 )
 
-# Enable CORS for local UI and testing
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,7 +24,6 @@ app.add_middleware(
 )
 
 
-# Request & Response Schemas
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=2, example="What are the core components of an Agentic AI system?")
 
@@ -65,7 +59,6 @@ SAMPLE_QUERIES = [
 
 @app.get("/")
 def root():
-    """Welcome endpoint."""
     return {
         "message": "Welcome to the Agentic AI RAG Chatbot API",
         "docs": "/docs",
@@ -76,7 +69,6 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Service health and vector store status."""
     try:
         store = get_vector_store()
         count = store.count()
@@ -128,5 +120,5 @@ def query_endpoint(req: ChatRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    print("[INFO] Starting FastAPI server on http://127.0.0.1:8000 ...")
+    print("Starting server on http://127.0.0.1:8000")
     uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)

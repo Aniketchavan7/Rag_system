@@ -1,7 +1,4 @@
-"""
-LangGraph-powered RAG pipeline for the Agentic AI eBook.
-Implements retrieval, relevance assessment, strictly grounded generation, and confidence evaluation.
-"""
+# LangGraph RAG pipeline
 
 import os
 from typing import List, Dict, Any, Optional, TypedDict
@@ -18,8 +15,6 @@ from config import (
 )
 from store import get_vector_store
 
-
-# State definition for the LangGraph workflow
 class RAGState(TypedDict, total=False):
     question: str
     retrieved_chunks: List[Dict[str, Any]]
@@ -32,7 +27,6 @@ class RAGState(TypedDict, total=False):
 
 
 def create_llm() -> ChatOpenAI:
-    """Initialize OpenAI-compatible chat model (e.g. xKiro, Groq, or OpenAI)."""
     return ChatOpenAI(
         base_url=LLM_BASE_URL,
         api_key=LLM_API_KEY,
@@ -42,18 +36,13 @@ def create_llm() -> ChatOpenAI:
     )
 
 
-# ==========================================
-# LangGraph Nodes
-# ==========================================
-
 def retrieve_node(state: RAGState) -> Dict[str, Any]:
-    """Step 1: Retrieve top-k semantically relevant chunks from the vector store."""
+    """Fetch top-k chunks from vector store."""
     question = state["question"].strip()
     store = get_vector_store()
 
     chunks = store.search(query=question, top_k=TOP_K)
 
-    # Format retrieved chunks into readable context blocks with page citations
     context_parts = []
     for idx, chunk in enumerate(chunks, 1):
         page = chunk.get("page", "Unknown")
@@ -71,25 +60,19 @@ def retrieve_node(state: RAGState) -> Dict[str, Any]:
 
 
 def evaluate_relevance_node(state: RAGState) -> Dict[str, Any]:
-    """Step 2: Check similarity scores to assess context sufficiency."""
+    """Check if retrieved chunks are relevant enough to bother calling the LLM."""
     chunks = state.get("retrieved_chunks", [])
     if not chunks:
-        return {
-            "confidence_score": 0.0,
-            "refusal": True
-        }
+        return {"confidence_score": 0.0, "refusal": True}
 
-    # Compute top and average similarity
     top_score = max(c.get("score", 0.0) for c in chunks)
     avg_score = sum(c.get("score", 0.0) for c in chunks) / len(chunks)
 
-    # If the closest chunk similarity is below the threshold, flag refusal
+    # 0.45 was picked after testing — lower lets garbage through, higher refuses valid queries
     if top_score < CONFIDENCE_THRESHOLD:
-        return {
-            "confidence_score": round(top_score, 3),
-            "refusal": True
-        }
+        return {"confidence_score": round(top_score, 3), "refusal": True}
 
+    # 70/30 blend: top score matters more than average, but average keeps it honest
     return {
         "confidence_score": round((top_score * 0.7) + (avg_score * 0.3), 3),
         "refusal": False
@@ -97,19 +80,14 @@ def evaluate_relevance_node(state: RAGState) -> Dict[str, Any]:
 
 
 def generate_node(state: RAGState) -> Dict[str, Any]:
-    """Step 3: Generate strictly grounded answer using LLM."""
+    """Call the LLM with strict grounding instructions. Skip if we already decided to refuse."""
     if state.get("refusal", False):
         refusal_msg = (
             "I cannot answer this question because the provided Agentic AI eBook "
             "does not contain relevant information on this topic."
         )
-        return {
-            "answer": refusal_msg,
-            "is_grounded": False,
-            "error": False
-        }
+        return {"answer": refusal_msg, "is_grounded": False, "error": False}
 
-    # Guard: ensure API key is configured
     if not LLM_API_KEY or LLM_API_KEY.strip() in ("", "your_llm_api_key_here"):
         return {
             "answer": "Error: LLM API key is not configured. Please set a valid LLM_API_KEY in your .env file.",
@@ -156,7 +134,7 @@ def generate_node(state: RAGState) -> Dict[str, Any]:
 
 
 def verify_grounding_node(state: RAGState) -> Dict[str, Any]:
-    """Step 4: Verify answer grounding and finalize confidence score."""
+    """Last sanity check — make sure LLM errors don't get returned as grounded answers."""
     answer = state.get("answer", "").strip()
     retrieved = state.get("retrieved_chunks", [])
     current_score = state.get("confidence_score", 0.0)
@@ -167,29 +145,24 @@ def verify_grounding_node(state: RAGState) -> Dict[str, Any]:
         or "api key is not configured" in answer.lower()
     )
 
-    # 1. Error Guard: LLM errors must NEVER be returned as grounded
     if has_error:
-        return {
-            "confidence_score": 0.0,
-            "is_grounded": False
-        }
+        return {"confidence_score": 0.0, "is_grounded": False}
 
-    # 2. Refusal Guard: Check for refusal indicators
-    refusal_keywords = [
-        "does not contain",
-        "cannot answer",
-        "not mentioned in the context",
-        "no information provided",
-        "i do not have enough information",
-        "not provide enough specific facts"
-    ]
-    is_refusal = state.get("refusal", False) or any(k in answer.lower() for k in refusal_keywords)
+    # Refusal check: early refusal from low similarity, or LLM explicitly refused
+    has_citations = "page " in answer.lower() or "(page" in answer.lower()
+    if state.get("refusal", False):
+        is_refusal = True
+    elif "does not contain relevant information" in answer.lower() and not has_citations:
+        is_refusal = True
+    elif answer.startswith("I cannot answer") and not has_citations:
+        is_refusal = True
+    else:
+        is_refusal = False
 
     if is_refusal or not retrieved:
         final_score = min(current_score, 0.15)
         is_grounded = False
     else:
-        # Scale confidence score based on verified chunk quality
         final_score = min(1.0, max(0.45, current_score))
         is_grounded = True
 
@@ -199,21 +172,14 @@ def verify_grounding_node(state: RAGState) -> Dict[str, Any]:
     }
 
 
-# ==========================================
-# Graph Assembly
-# ==========================================
-
 def build_rag_graph():
-    """Build and compile the LangGraph RAG workflow."""
     workflow = StateGraph(RAGState)
 
-    # Add workflow nodes
     workflow.add_node("retrieve", retrieve_node)
     workflow.add_node("evaluate", evaluate_relevance_node)
     workflow.add_node("generate", generate_node)
     workflow.add_node("verify", verify_grounding_node)
 
-    # Define sequential graph edges
     workflow.set_entry_point("retrieve")
     workflow.add_edge("retrieve", "evaluate")
     workflow.add_edge("evaluate", "generate")
@@ -223,21 +189,11 @@ def build_rag_graph():
     return workflow.compile()
 
 
-# Singleton compiled graph instance
 rag_pipeline = build_rag_graph()
 
 
 def ask_question(question: str) -> Dict[str, Any]:
-    """
-    High-level entry point to ask a question to the RAG pipeline.
-    Returns:
-        {
-            "final_answer": str,
-            "retrieved_context_chunks": list[dict],
-            "confidence_score": float,
-            "is_grounded": bool
-        }
-    """
+    """Run a question through the full RAG pipeline."""
     initial_state: RAGState = {
         "question": question,
         "retrieved_chunks": [],

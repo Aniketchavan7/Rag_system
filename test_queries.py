@@ -52,17 +52,9 @@ TEST_QUERIES = [
 
 
 def run_benchmark():
-    print("=" * 80)
-    print("       AGENTIC AI RAG PIPELINE BENCHMARK & GROUNDING VERIFICATION       ")
-    print("=" * 80)
-
     for idx, test in enumerate(TEST_QUERIES, 1):
         q = test["question"]
-        cat = test["category"]
-
-        print(f"\n[TEST {idx}/{len(TEST_QUERIES)}] Category: {cat}")
-        print(f"Question: \"{q}\"")
-        print("-" * 80)
+        print(f"\n[{idx}/{len(TEST_QUERIES)}] {q}")
 
         start_time = time.time()
         result = ask_question(q)
@@ -73,14 +65,11 @@ def run_benchmark():
         grounded = result["is_grounded"]
         chunks = result["retrieved_context_chunks"]
 
-        print(f"Confidence Score: {score:.3f} | Grounded: {grounded} | Time: {duration}s")
-        print(f"Retrieved Chunks: {len(chunks)}")
+        print(f"score: {score:.3f} | grounded: {grounded} | time: {duration}s | chunks: {len(chunks)}")
         for i, c in enumerate(chunks[:2], 1):
-            print(f"  -> Chunk {i}: Page {c.get('page')}, Score: {c.get('score'):.3f}")
+            print(f"  p.{c.get('page')}: {c.get('score'):.3f}")
 
-        print("\nAnswer:")
-        print(answer)
-        print("=" * 80)
+        print(f"\n{answer}\n")
 
 
 if __name__ == "__main__":

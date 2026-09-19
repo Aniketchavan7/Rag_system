@@ -88,7 +88,7 @@ if "input_query" not in st.session_state:
 
 # Sidebar
 with st.sidebar:
-    st.title("⚙️ System Status")
+    st.title("System Status")
     st.markdown("---")
 
     # Knowledge Base Stats
@@ -104,10 +104,10 @@ with st.sidebar:
     st.markdown(f"**Pipeline:** `LangGraph StateGraph`")
 
     st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-    st.link_button("🚀 FastAPI Docs", "http://localhost:8000/docs", use_container_width=True)
+    st.link_button("FastAPI Docs", "http://localhost:8000/docs", use_container_width=True)
 
     st.markdown("---")
-    st.subheader("💡 Sample Questions")
+    st.subheader("Sample Questions")
     st.caption("Click any question to try it:")
 
     for idx, sample in enumerate(SAMPLE_QUERIES):
@@ -115,14 +115,14 @@ with st.sidebar:
             st.session_state.selected_sample = sample
 
     st.markdown("---")
-    if st.button("🗑️ Clear Chat History", use_container_width=True):
+    if st.button("Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
 
 # Main View
-st.markdown('<div class="main-title">🤖 Agentic AI eBook RAG Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Strictly grounded Q&A powered by LangGraph, Vector Embeddings & xKiro LLM</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">Agentic AI Assistant</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Grounded Q&A over the Agentic AI eBook using LangGraph and ChromaDB</div>', unsafe_allow_html=True)
 
 # Render Chat History
 for msg in st.session_state.messages:
@@ -150,7 +150,7 @@ for msg in st.session_state.messages:
             # Retrieved chunks expander
             chunks = msg.get("chunks", [])
             if chunks:
-                with st.expander(f"📚 View Retrieved Chunks ({len(chunks)} sources from eBook)"):
+                with st.expander(f"Retrieved Chunks ({len(chunks)})"):
                     for i, c in enumerate(chunks, 1):
                         st.markdown(
                             f"**Source #{i} — Page {c.get('page', '?')}** | Similarity Score: `{c.get('score', 0):.3f}`"
@@ -197,7 +197,7 @@ if user_prompt:
                     st.markdown(f'<span class="score-badge-low">Confidence: {pct}% (Out of Domain)</span>', unsafe_allow_html=True)
 
             if chunks:
-                with st.expander(f"📚 View Retrieved Chunks ({len(chunks)} sources from eBook)"):
+                with st.expander(f"Retrieved Chunks ({len(chunks)})"):
                     for i, c in enumerate(chunks, 1):
                         st.markdown(
                             f"**Source #{i} — Page {c.get('page', '?')}** | Similarity Score: `{c.get('score', 0):.3f}`"
