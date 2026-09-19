@@ -89,6 +89,7 @@ def run_ingestion():
     chunks = chunk_documents(pages_data)
 
     store = get_vector_store()
+    store.reset()
     print(f"Indexing {len(chunks)} chunks into ChromaDB...")
     indexed_count = store.add_documents(chunks)
 

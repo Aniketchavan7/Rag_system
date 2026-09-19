@@ -124,6 +124,18 @@ class ChromaVectorStore:
             logger.warning(f"Could not initialize BM25 ranker: {e}")
             self._bm25_ranker = None
 
+    def reset(self):
+        name = self.collection.name
+        try:
+            self.client.delete_collection(name)
+        except Exception:
+            pass
+        self.collection = self.client.get_or_create_collection(
+            name=name,
+            metadata={"hnsw:space": "cosine"}
+        )
+        self._bm25_ranker = None
+
     def add_documents(self, documents: List[Dict[str, Any]]) -> int:
         """
         Embed and persist document chunks.
@@ -194,9 +206,9 @@ class ChromaVectorStore:
                 }
 
         # RRF fusion + score calibration
-        # 75/25 dense/BM25 blend — dense handles semantic similarity well but misses exact terms,
-        # BM25 catches those but has no concept of meaning. Tried 50/50 and 80/20,
-        # 75/25 gave the most consistent results on the test queries.
+        # 60/40 dense/BM25 blend — dense handles semantic similarity, but alone it tended to over-rank
+        # broad intro narratives above specific technical pages where exact keyword terms like "challenges"
+        # or "mitigation" appeared. Shifting from 75/25 to 60/40 gives keyword matches enough pull.
         all_candidate_ids = set(dense_map.keys()).union(set(sparse_map.keys()))
         k_rrf = 60
         fused = []
@@ -217,7 +229,7 @@ class ChromaVectorStore:
             # calibrated similarity score
             if d_info and s_info:
                 norm_bm = min(1.0, s_info["bm_score"] / max_bm_score)
-                sim = (0.75 * d_info["score"]) + (0.25 * norm_bm)
+                sim = (0.60 * d_info["score"]) + (0.40 * norm_bm)
             elif d_info:
                 sim = d_info["score"]
             elif s_info:
