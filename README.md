@@ -89,9 +89,16 @@ pip install -r requirements.txt
 
 ### Configuration
 
-Open `.env` and set your credentials. Any OpenAI-compatible endpoint works:
-- **xKiro / Groq / OpenAI**: Set `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL`.
-- Generate your own API key from your preferred provider (e.g., xKiro, Groq, or OpenAI) and paste it into `LLM_API_KEY`.
+Open `.env` and add your API key. Use an **xKiro** API key since it provides free access to the default model:
+
+1. Get a free API key from [xkiro.com](https://xkiro.com)
+2. Paste it into `LLM_API_KEY` in `.env`:
+
+```env
+LLM_BASE_URL=https://api.xkiro.com/v1
+LLM_API_KEY=your_xkiro_api_key_here
+LLM_MODEL=qwen/qwen3.5-flash:free
+```
 
 ## Running
 
