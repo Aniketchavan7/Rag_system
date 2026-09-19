@@ -90,6 +90,14 @@ with st.sidebar:
     st.markdown(f"**LLM Engine:** `{LLM_MODEL}`")
     st.markdown(f"**Pipeline:** `LangGraph StateGraph`")
 
+    if isinstance(total_chunks, int) and total_chunks == 0:
+        st.warning("⚠️ No documents indexed yet.")
+        if st.button("Index eBook Now", use_container_width=True):
+            with st.spinner("Indexing eBook into ChromaDB..."):
+                from ingest import run_ingestion
+                run_ingestion()
+                st.rerun()
+
     st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
     st.link_button("FastAPI Docs", "http://localhost:8000/docs", use_container_width=True)
 

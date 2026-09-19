@@ -56,6 +56,14 @@ TEST_QUERIES = [
 
 
 def run_benchmark():
+    from store import get_vector_store
+    store = get_vector_store()
+    if store.count() == 0:
+        print("ChromaDB vector store is empty. Running ingestion first...")
+        from ingest import run_ingestion
+        run_ingestion()
+        print("")
+
     for idx, test in enumerate(TEST_QUERIES, 1):
         q = test["question"]
         print(f"\n[{idx}/{len(TEST_QUERIES)}] {q}")
