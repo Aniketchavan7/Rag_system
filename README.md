@@ -1,5 +1,16 @@
 # RAG Chatbot — Agentic AI eBook
 
+<div align="center">
+
+[![GitHub Stars](https://img.shields.io/github/stars/Aniketchavan7/Rag_system?style=for-the-badge&logo=github&color=7aa2f7&labelColor=1a1b26)](https://github.com/Aniketchavan7/Rag_system/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-7aa2f7?style=for-the-badge&labelColor=1a1b26)](./LICENSE)
+
+> ⭐ **Production hybrid RAG with LangGraph & ChromaDB. Star this repo if you find it useful!**
+
+</div>
+
+---
+
 RAG system that answers questions from the Agentic AI eBook (60 pages). Uses LangGraph for the pipeline, ChromaDB for storage, and a hybrid dense+BM25 search. Refuses out-of-domain questions and cites page numbers.
 
 ## How it works
